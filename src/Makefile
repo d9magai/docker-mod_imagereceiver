@@ -25,7 +25,6 @@ all: mod_imagereceiver.so
 # compile and link.
 
 # get OpenCV's cflags, libs
-export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/opt/opencv/lib/pkgconfig
 OPENCV_CFLAGS=`pkg-config --cflags opencv`
 OPENCV_LIBS=`pkg-config --libs opencv`
 

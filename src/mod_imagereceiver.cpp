@@ -42,7 +42,6 @@ static int imagereceiver_handler(request_rec *r) {
         vec.insert(vec.end(), dup_data, dup_data + len);
         apr_bucket_delete(e);
     }
-    vec.push_back('\0');
     cv::Mat image = cv::imdecode(cv::Mat(vec), CV_LOAD_IMAGE_COLOR);
 
     json_object *jobj = json_object_new_object();

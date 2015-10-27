@@ -1,4 +1,5 @@
 #include <vector>
+#include <exception>
 #include <opencv2/opencv.hpp>
 #include <httpd.h>
 #include <http_protocol.h>
@@ -48,7 +49,14 @@ static int imagereceiver_handler(request_rec *r) {
         vec.insert(vec.end(), dup_data, dup_data + len);
         apr_bucket_delete(e);
     }
-    cv::Mat image = cv::imdecode(cv::Mat(vec), CV_LOAD_IMAGE_COLOR);
+
+    cv::Mat image;
+    try {
+        image = cv::imdecode(cv::Mat(vec), CV_LOAD_IMAGE_COLOR);
+    } catch (std::exception& e) {
+        ap_log_rerror(APLOG_MARK, APLOG_ERR, APLOG_MODULE_INDEX, r, e.what());
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
 
     json_object *jobj = json_object_new_object();
     json_object_object_add(jobj, "rows", json_object_new_string(std::to_string(image.rows).c_str()));

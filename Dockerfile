@@ -16,6 +16,5 @@ WORKDIR /opt/imagereceiver_build
 RUN make && apxs -A -i -a -n 'imagereceiver' mod_imagereceiver.so && make clean
 
 EXPOSE 80
-ENTRYPOINT ["/usr/sbin/httpd"]
-CMD ["-D", "FOREGROUND"]
+CMD ["/usr/sbin/httpd", "-D", "FOREGROUND"] 
 

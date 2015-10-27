@@ -26,6 +26,12 @@ static int imagereceiver_handler(request_rec *r) {
         ap_log_rerror(APLOG_MARK, APLOG_ERR, APLOG_MODULE_INDEX, r, "not upload");
         return HTTP_BAD_REQUEST;
     }
+    std::string contentType = apr_table_get(param->info, "Content-Type");
+    std::string type = contentType.substr(0, contentType.find('/'));
+    if (type != "image") {
+        ap_log_rerror(APLOG_MARK, APLOG_ERR, APLOG_MODULE_INDEX, r, "is not image");
+        return HTTP_BAD_REQUEST;
+    }
 
     apr_bucket_brigade *bb = apr_brigade_create(r->pool, r->connection->bucket_alloc);
     apreq_brigade_copy(bb, param->upload);

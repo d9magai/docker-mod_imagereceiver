@@ -57,6 +57,10 @@ static int imagereceiver_handler(request_rec *r) {
         ap_log_rerror(APLOG_MARK, APLOG_ERR, APLOG_MODULE_INDEX, r, e.what());
         return HTTP_INTERNAL_SERVER_ERROR;
     }
+    if (image.data == NULL) {
+        ap_log_rerror(APLOG_MARK, APLOG_ERR, APLOG_MODULE_INDEX, r, "buffer is too short or contains invalid data");
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
 
     json_object *jobj = json_object_new_object();
     json_object_object_add(jobj, "rows", json_object_new_string(std::to_string(image.rows).c_str()));

@@ -81,10 +81,12 @@ static int imagereceiver_handler(request_rec *r) {
         return DECLINED;
     }
 
-    cv::Mat image;
     try {
         apreq_param_t *param = validate_post_req(r, "image");
-        image = convert_to_mat(r, param->upload);
+        cv::Mat image = convert_to_mat(r, param->upload);
+        json_object *jobj = get_json_obj(image);
+        ap_set_content_type(r, "application/json");
+        ap_rprintf(r, json_object_to_json_string(jobj));
     } catch (bad_request& e) {
         ap_log_rerror(APLOG_MARK, APLOG_ERR, APLOG_MODULE_INDEX, r, e.what());
         return HTTP_BAD_REQUEST;
@@ -95,12 +97,6 @@ static int imagereceiver_handler(request_rec *r) {
         ap_log_rerror(APLOG_MARK, APLOG_ERR, APLOG_MODULE_INDEX, r, e.what());
         return HTTP_INTERNAL_SERVER_ERROR;
     }
-
-    json_object *jobj = json_object_new_object();
-    json_object_object_add(jobj, "rows", json_object_new_string(std::to_string(image.rows).c_str()));
-    json_object_object_add(jobj, "cols", json_object_new_string(std::to_string(image.cols).c_str()));
-    ap_set_content_type(r, "application/json");
-    ap_rprintf(r, json_object_to_json_string(jobj));
 
     return OK;
 }

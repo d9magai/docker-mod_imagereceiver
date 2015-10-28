@@ -60,7 +60,11 @@ cv::Mat convert_to_mat(request_rec *r, apr_bucket_brigade *upload) {
         apr_bucket_delete(e);
     }
 
-    return cv::imdecode(cv::Mat(vec), CV_LOAD_IMAGE_COLOR);
+    cv::Mat ret = cv::imdecode(cv::Mat(vec), CV_LOAD_IMAGE_COLOR);
+    if (ret.data == NULL) {
+        throw internal_server_error("buffer is too short or contains invalid data");
+    }
+    return ret;
 }
 
 static int imagereceiver_handler(request_rec *r) {
@@ -81,10 +85,6 @@ static int imagereceiver_handler(request_rec *r) {
         return HTTP_INTERNAL_SERVER_ERROR;
     } catch (std::exception& e) {
         ap_log_rerror(APLOG_MARK, APLOG_ERR, APLOG_MODULE_INDEX, r, e.what());
-        return HTTP_INTERNAL_SERVER_ERROR;
-    }
-    if (image.data == NULL) {
-        ap_log_rerror(APLOG_MARK, APLOG_ERR, APLOG_MODULE_INDEX, r, "buffer is too short or contains invalid data");
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 

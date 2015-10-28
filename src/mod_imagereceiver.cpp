@@ -20,6 +20,23 @@ public:
     }
 };
 
+apreq_param_t *validate_post_req(request_rec *r, const char *name) {
+
+    apreq_param_t *param = apreq_body_get(apreq_handle_apache2(r), name);
+    if (param == NULL) {
+        throw bad_request_error("no such param");
+    } else if (param->upload == NULL) {
+        throw bad_request_error("not upload");
+    }
+    std::string contentType = apr_table_get(param->info, "Content-Type");
+    std::string type = contentType.substr(0, contentType.find('/'));
+    if (type != "image") {
+        throw bad_request_error("is not image");
+    }
+
+    return param;
+}
+
 static int imagereceiver_handler(request_rec *r) {
 
     if (strcmp(r->handler, "imagereceiver")) {

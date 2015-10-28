@@ -13,6 +13,13 @@ extern "C" module AP_MODULE_DECLARE_DATA imagereceiver_module;
 
 APLOG_USE_MODULE (imagereceiver);
 
+class bad_request_error: public std::runtime_error {
+public:
+    explicit bad_request_error(const std::string& s) :
+            std::runtime_error(s) {
+    }
+};
+
 static int imagereceiver_handler(request_rec *r) {
 
     if (strcmp(r->handler, "imagereceiver")) {

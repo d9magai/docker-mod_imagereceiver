@@ -72,25 +72,13 @@ static int imagereceiver_handler(request_rec *r) {
     cv::Mat image;
     try {
         apreq_param_t *param = validate_post_req(r, "image");
-        apr_bucket_brigade *bb = apr_brigade_create(r->pool, r->connection->bucket_alloc);
-        apreq_brigade_copy(bb, param->upload);
-        std::vector<char> vec;
-        for (apr_bucket *e = APR_BRIGADE_FIRST(bb); e != APR_BRIGADE_SENTINEL(bb); e = APR_BUCKET_NEXT(e)) {
-            const char *data;
-            apr_size_t len;
-            if (apr_bucket_read(e, &data, &len, APR_BLOCK_READ) != APR_SUCCESS) {
-                ap_log_rerror(APLOG_MARK, APLOG_ERR, APLOG_MODULE_INDEX, r, "failed to read bucket");
-                return HTTP_INTERNAL_SERVER_ERROR;
-            }
-
-            const char *dup_data = apr_pstrmemdup(r->pool, data, len);
-            vec.insert(vec.end(), dup_data, dup_data + len);
-            apr_bucket_delete(e);
-        }
-        image = cv::imdecode(cv::Mat(vec), CV_LOAD_IMAGE_COLOR);
+        image = convert_to_mat(r, param->upload);
     } catch (bad_request& e) {
         ap_log_rerror(APLOG_MARK, APLOG_ERR, APLOG_MODULE_INDEX, r, e.what());
         return HTTP_BAD_REQUEST;
+    } catch (internal_server_error& e) {
+        ap_log_rerror(APLOG_MARK, APLOG_ERR, APLOG_MODULE_INDEX, r, e.what());
+        return HTTP_INTERNAL_SERVER_ERROR;
     } catch (std::exception& e) {
         ap_log_rerror(APLOG_MARK, APLOG_ERR, APLOG_MODULE_INDEX, r, e.what());
         return HTTP_INTERNAL_SERVER_ERROR;

@@ -20,6 +20,13 @@ public:
     }
 };
 
+class internal_server_error: public std::runtime_error {
+public:
+    explicit internal_server_error(const std::string& s) :
+            std::runtime_error(s) {
+    }
+};
+
 apreq_param_t *validate_post_req(request_rec *r, const char *name) {
 
     apreq_param_t *param = apreq_body_get(apreq_handle_apache2(r), name);

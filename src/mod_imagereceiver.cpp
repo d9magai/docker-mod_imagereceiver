@@ -13,9 +13,9 @@ extern "C" module AP_MODULE_DECLARE_DATA imagereceiver_module;
 
 APLOG_USE_MODULE (imagereceiver);
 
-class bad_request_error: public std::runtime_error {
+class bad_request: public std::runtime_error {
 public:
-    explicit bad_request_error(const std::string& s) :
+    explicit bad_request(const std::string& s) :
             std::runtime_error(s) {
     }
 };
@@ -24,14 +24,14 @@ apreq_param_t *validate_post_req(request_rec *r, const char *name) {
 
     apreq_param_t *param = apreq_body_get(apreq_handle_apache2(r), name);
     if (param == NULL) {
-        throw bad_request_error("no such param");
+        throw bad_request("no such param");
     } else if (param->upload == NULL) {
-        throw bad_request_error("not upload");
+        throw bad_request("not upload");
     }
     std::string contentType = apr_table_get(param->info, "Content-Type");
     std::string type = contentType.substr(0, contentType.find('/'));
     if (type != "image") {
-        throw bad_request_error("is not image");
+        throw bad_request("is not image");
     }
 
     return param;
@@ -62,7 +62,7 @@ static int imagereceiver_handler(request_rec *r) {
             apr_bucket_delete(e);
         }
         image = cv::imdecode(cv::Mat(vec), CV_LOAD_IMAGE_COLOR);
-    } catch (bad_request_error& e) {
+    } catch (bad_request& e) {
         ap_log_rerror(APLOG_MARK, APLOG_ERR, APLOG_MODULE_INDEX, r, e.what());
         return HTTP_BAD_REQUEST;
     } catch (std::exception& e) {

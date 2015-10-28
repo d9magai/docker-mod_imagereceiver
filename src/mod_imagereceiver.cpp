@@ -67,6 +67,14 @@ cv::Mat convert_to_mat(request_rec *r, apr_bucket_brigade *upload) {
     return ret;
 }
 
+json_object *get_json_obj(cv::Mat image) {
+
+    json_object *jobj = json_object_new_object();
+    json_object_object_add(jobj, "rows", json_object_new_string(std::to_string(image.rows).c_str()));
+    json_object_object_add(jobj, "cols", json_object_new_string(std::to_string(image.cols).c_str()));
+    return jobj;
+}
+
 static int imagereceiver_handler(request_rec *r) {
 
     if (strcmp(r->handler, "imagereceiver")) {

@@ -27,7 +27,7 @@ public:
     }
 };
 
-apreq_param_t *validate_post_req(request_rec *r, const char *name) {
+apreq_param_t *get_validated_post_param(request_rec *r, const char *name) {
 
     apreq_param_t *param = apreq_body_get(apreq_handle_apache2(r), name);
     if (param == NULL) {
@@ -82,7 +82,7 @@ static int imagereceiver_handler(request_rec *r) {
     }
 
     try {
-        apreq_param_t *param = validate_post_req(r, "image");
+        apreq_param_t *param = get_validated_post_param(r, "image");
         cv::Mat image = convert_to_mat(r, param->upload);
         const char *json_str = get_json_string(image);
         ap_set_content_type(r, "application/json");

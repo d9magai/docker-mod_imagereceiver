@@ -84,9 +84,26 @@ static int imagereceiver_handler(request_rec *r) {
     try {
         apreq_param_t *param = get_validated_post_param(r, "image");
         cv::Mat image = convert_to_mat(r, param->upload);
-        const char *json_str = get_json_string(image);
-        ap_set_content_type(r, "application/json");
-        ap_rprintf(r, json_str);
+        //const char *json_str = get_json_string(image);
+        //ap_set_content_type(r, "application/json");
+        //ap_rprintf(r, json_str);
+
+        std::vector<int> p;
+        p.push_back(CV_IMWRITE_JPEG_QUALITY);
+        p.push_back(10);
+        std::vector<unsigned char> buf;
+        cv::imencode(".jpg", image, buf, p);
+        std::string str(buf.begin(), buf.end());
+        apr_size_t length = str.length();
+        const char *data = str.c_str();
+        
+        apr_bucket *bkt = apr_bucket_pool_create(data, length, r->pool, r->connection->bucket_alloc);
+        apr_bucket_brigade *bucket_brigate = apr_brigade_create(r->pool, r->connection->bucket_alloc);
+        APR_BRIGADE_INSERT_TAIL(bucket_brigate, bkt);
+        ap_set_content_type(r, "image/jpg");
+        ap_set_content_length(r, length);
+        ap_pass_brigade(r->output_filters, bucket_brigate);
+
     } catch (bad_request& e) {
         ap_log_rerror(APLOG_MARK, APLOG_ERR, APLOG_MODULE_INDEX, r, e.what());
         return HTTP_BAD_REQUEST;

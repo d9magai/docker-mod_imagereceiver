@@ -75,6 +75,16 @@ const char *get_json_string(cv::Mat image) {
     return json_object_to_json_string(jobj);
 }
 
+std::string encode_mat_to_string(cv::Mat image) {
+
+    std::vector<int> p;
+    p.push_back(CV_IMWRITE_JPEG_QUALITY);
+    p.push_back(100);
+    std::vector<unsigned char> buf;
+    cv::imencode(".jpg", image, buf, p);
+    return std::string(buf.begin(), buf.end());
+}
+
 static int imagereceiver_handler(request_rec *r) {
 
     if (strcmp(r->handler, "imagereceiver")) {
@@ -84,24 +94,13 @@ static int imagereceiver_handler(request_rec *r) {
     try {
         apreq_param_t *param = get_validated_post_param(r, "image");
         cv::Mat image = convert_to_mat(r, param->upload);
-        //const char *json_str = get_json_string(image);
-        //ap_set_content_type(r, "application/json");
-        //ap_rprintf(r, json_str);
-
-        std::vector<int> p;
-        p.push_back(CV_IMWRITE_JPEG_QUALITY);
-        p.push_back(10);
-        std::vector<unsigned char> buf;
-        cv::imencode(".jpg", image, buf, p);
-        std::string str(buf.begin(), buf.end());
-        apr_size_t length = str.length();
-        const char *data = str.c_str();
+        std::string data = encode_mat_to_string(image);
         
-        apr_bucket *bkt = apr_bucket_pool_create(data, length, r->pool, r->connection->bucket_alloc);
+        apr_bucket *bkt = apr_bucket_pool_create(data.c_str(), data.length(), r->pool, r->connection->bucket_alloc);
         apr_bucket_brigade *bucket_brigate = apr_brigade_create(r->pool, r->connection->bucket_alloc);
         APR_BRIGADE_INSERT_TAIL(bucket_brigate, bkt);
         ap_set_content_type(r, "image/jpg");
-        ap_set_content_length(r, length);
+        ap_set_content_length(r, data.length());
         ap_pass_brigade(r->output_filters, bucket_brigate);
 
     } catch (bad_request& e) {

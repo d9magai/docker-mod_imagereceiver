@@ -12,8 +12,6 @@ extern "C" module AP_MODULE_DECLARE_DATA imagereceiver_module;
 
 APLOG_USE_MODULE (imagereceiver);
 
-const std::string cascade_name = "/opt/opencv/share/OpenCV/lbpcascades/lbpcascade_frontalface.xml";
-
 class bad_request: public std::runtime_error {
 public:
     explicit bad_request(const std::string& s) :
@@ -68,12 +66,12 @@ cv::Mat convert_to_mat(request_rec *r, apr_bucket_brigade *upload) {
     return ret;
 }
 
-void detect_face(cv::Mat image) {
+void detect_face(cv::Mat image, const std::string cascade_filename) {
 
     cv::Mat gray;
     cv::cvtColor(image, gray, CV_BGRA2GRAY);
     cv::CascadeClassifier cascade;
-    cascade.load(cascade_name);
+    cascade.load(cascade_filename);
     std::vector<cv::Rect> faces;
     cascade.detectMultiScale(gray, faces);
     for(std::vector<cv::Rect>::iterator it=faces.begin(); it!=faces.end(); it++){
@@ -100,7 +98,7 @@ static int imagereceiver_handler(request_rec *r) {
     try {
         apreq_param_t *param = get_validated_post_param(r, "image");
         cv::Mat image = convert_to_mat(r, param->upload);
-        detect_face(image);
+        detect_face(image, std::string(apr_table_get(r->subprocess_env, "LBPCASCADE_FRONTALFACE_PATH")));
         std::string data = encode_mat_to_string(image);
         
         apr_bucket *bkt = apr_bucket_pool_create(data.c_str(), data.length(), r->pool, r->connection->bucket_alloc);

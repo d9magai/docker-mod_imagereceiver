@@ -68,6 +68,19 @@ cv::Mat convert_to_mat(request_rec *r, apr_bucket_brigade *upload) {
     return ret;
 }
 
+void detect_face(cv::Mat image) {
+
+    cv::Mat gray;
+    cv::cvtColor(image, gray, CV_BGRA2GRAY);
+    cv::CascadeClassifier cascade;
+    cascade.load(cascade_name);
+    std::vector<cv::Rect> faces;
+    cascade.detectMultiScale(gray, faces);
+    for(std::vector<cv::Rect>::iterator it=faces.begin(); it!=faces.end(); it++){
+        cv::rectangle(image, *it, CV_RGB(255,0,0), 3);
+    }
+}
+
 std::string encode_mat_to_string(cv::Mat image) {
 
     std::vector<int> p;
@@ -87,16 +100,7 @@ static int imagereceiver_handler(request_rec *r) {
     try {
         apreq_param_t *param = get_validated_post_param(r, "image");
         cv::Mat image = convert_to_mat(r, param->upload);
-
-        cv::Mat gray;
-        cv::cvtColor(image, gray, CV_BGRA2GRAY);
-        cv::CascadeClassifier cascade;
-        cascade.load(cascade_name);
-        std::vector<cv::Rect> faces;
-        cascade.detectMultiScale(gray, faces);
-        for(std::vector<cv::Rect>::iterator it=faces.begin(); it!=faces.end(); it++){
-            cv::rectangle(image, *it, CV_RGB(255,0,0), 3);
-        }
+        detect_face(image);
         std::string data = encode_mat_to_string(image);
         
         apr_bucket *bkt = apr_bucket_pool_create(data.c_str(), data.length(), r->pool, r->connection->bucket_alloc);

@@ -7,7 +7,6 @@
 #include <apr_strings.h>
 #include <apreq2/apreq_util.h>
 #include <apreq2/apreq_module_apache2.h>
-#include <json-c/json.h>
 
 extern "C" module AP_MODULE_DECLARE_DATA imagereceiver_module;
 
@@ -67,14 +66,6 @@ cv::Mat convert_to_mat(request_rec *r, apr_bucket_brigade *upload) {
         throw internal_server_error("buffer is too short or contains invalid data");
     }
     return ret;
-}
-
-const char *get_json_string(cv::Mat image) {
-
-    json_object *jobj = json_object_new_object();
-    json_object_object_add(jobj, "rows", json_object_new_string(std::to_string(image.rows).c_str()));
-    json_object_object_add(jobj, "cols", json_object_new_string(std::to_string(image.cols).c_str()));
-    return json_object_to_json_string(jobj);
 }
 
 std::string encode_mat_to_string(cv::Mat image) {

@@ -81,9 +81,7 @@ void detect_face(cv::Mat image, const std::string cascade_filename) {
 
 std::string encode_mat_to_string(cv::Mat image) {
 
-    std::vector<int> p;
-    p.push_back(CV_IMWRITE_JPEG_QUALITY);
-    p.push_back(100);
+    std::vector<int> p{CV_IMWRITE_JPEG_QUALITY, 100};
     std::vector<unsigned char> buf;
     cv::imencode(".jpg", image, buf, p);
     return std::string(buf.begin(), buf.end());

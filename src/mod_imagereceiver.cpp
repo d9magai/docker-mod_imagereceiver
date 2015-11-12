@@ -74,8 +74,8 @@ void detect_face(cv::Mat image, const std::string cascade_filename) {
     cascade.load(cascade_filename);
     std::vector<cv::Rect> faces;
     cascade.detectMultiScale(gray, faces);
-    for (auto rect: faces) {
-        cv::rectangle(image, rect, CV_RGB(255,0,0), 3);
+    for (auto face: faces) {
+        cv::rectangle(image, face, CV_RGB(255,0,0), 3);
     }
 }
 

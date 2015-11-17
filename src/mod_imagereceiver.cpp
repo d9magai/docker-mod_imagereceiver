@@ -66,7 +66,7 @@ cv::Mat convert_to_mat(request_rec *r, apr_bucket_brigade *upload) {
     return ret;
 }
 
-void detect_face(cv::Mat image, const std::string cascade_filename) {
+cv::Mat detect_face(cv::Mat image, const std::string cascade_filename) {
 
     cv::Mat gray;
     cv::cvtColor(image, gray, CV_BGRA2GRAY);
@@ -74,9 +74,12 @@ void detect_face(cv::Mat image, const std::string cascade_filename) {
     cascade.load(cascade_filename);
     std::vector<cv::Rect> faces;
     cascade.detectMultiScale(gray, faces);
+
+    cv::Mat ret = image;
     for (auto face: faces) {
-        cv::rectangle(image, face, CV_RGB(255,0,0), 3);
+        cv::rectangle(ret, face, CV_RGB(255,0,0), 3);
     }
+    return ret;
 }
 
 std::string encode_mat_to_string(cv::Mat image) {
@@ -96,8 +99,8 @@ static int imagereceiver_handler(request_rec *r) {
     try {
         apreq_param_t *param = get_validated_post_param(r, "image");
         cv::Mat image = convert_to_mat(r, param->upload);
-        detect_face(image, std::string(apr_table_get(r->subprocess_env, "LBPCASCADE_FRONTALFACE_PATH")));
-        std::string data = encode_mat_to_string(image);
+        cv::Mat detect_face_image = detect_face(image, std::string(apr_table_get(r->subprocess_env, "LBPCASCADE_FRONTALFACE_PATH")));
+        std::string data = encode_mat_to_string(detect_face_image);
         
         apr_bucket *bkt = apr_bucket_pool_create(data.c_str(), data.length(), r->pool, r->connection->bucket_alloc);
         apr_bucket_brigade *bucket_brigate = apr_brigade_create(r->pool, r->connection->bucket_alloc);

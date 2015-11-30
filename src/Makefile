@@ -34,7 +34,7 @@ mod_imagereceiver.o: mod_imagereceiver.cpp
 
 # link
 mod_imagereceiver.so: mod_imagereceiver.o 
-	g++ -fPIC -shared -o $@ $< $(APXS_LIBS_SHLIB) -lapreq2 -ljson  $(OPENCV_LIBS)
+	g++ -fPIC -shared -o $@ $< $(APXS_LIBS_SHLIB) -lapreq2 $(OPENCV_LIBS)
 # install the shared object file into Apache 
 install: all
 	$(APXS) -i -a -n 'imagereceiver' mod_imagereceiver.so

@@ -7,7 +7,6 @@
 #include <apr_strings.h>
 #include <apreq2/apreq_util.h>
 #include <apreq2/apreq_module_apache2.h>
-#include <json-c/json.h>
 
 extern "C" module AP_MODULE_DECLARE_DATA imagereceiver_module;
 
@@ -44,7 +43,7 @@ apreq_param_t *get_validated_post_param(request_rec *r, const char *name) {
     return param;
 }
 
-cv::Mat convert_to_mat(request_rec *r, apr_bucket_brigade *upload) {
+cv::Mat bb2Mat(request_rec *r, apr_bucket_brigade *upload) {
 
     apr_bucket_brigade *bb = apr_brigade_create(r->pool, r->connection->bucket_alloc);
     apreq_brigade_copy(bb, upload);
@@ -67,12 +66,28 @@ cv::Mat convert_to_mat(request_rec *r, apr_bucket_brigade *upload) {
     return ret;
 }
 
-const char *get_json_string(cv::Mat image) {
+cv::Mat detect_face(cv::Mat image, const std::string cascade_filename) {
 
-    json_object *jobj = json_object_new_object();
-    json_object_object_add(jobj, "rows", json_object_new_string(std::to_string(image.rows).c_str()));
-    json_object_object_add(jobj, "cols", json_object_new_string(std::to_string(image.cols).c_str()));
-    return json_object_to_json_string(jobj);
+    cv::Mat gray;
+    cv::cvtColor(image, gray, CV_BGRA2GRAY);
+    cv::CascadeClassifier cascade;
+    cascade.load(cascade_filename);
+    std::vector<cv::Rect> faces;
+    cascade.detectMultiScale(gray, faces);
+
+    cv::Mat ret = image;
+    for (auto face : faces) {
+        cv::rectangle(ret, face, CV_RGB(255, 0, 0), 3);
+    }
+    return ret;
+}
+
+std::string encodeMat(cv::Mat image) {
+
+    std::vector<int> p { CV_IMWRITE_JPEG_QUALITY, 100 };
+    std::vector<unsigned char> buf;
+    cv::imencode(".jpg", image, buf, p);
+    return std::string(buf.begin(), buf.end());
 }
 
 static int imagereceiver_handler(request_rec *r) {
@@ -83,10 +98,17 @@ static int imagereceiver_handler(request_rec *r) {
 
     try {
         apreq_param_t *param = get_validated_post_param(r, "image");
-        cv::Mat image = convert_to_mat(r, param->upload);
-        const char *json_str = get_json_string(image);
-        ap_set_content_type(r, "application/json");
-        ap_rprintf(r, json_str);
+        cv::Mat image = bb2Mat(r, param->upload);
+        cv::Mat detect_face_image = detect_face(image, std::string(apr_table_get(r->subprocess_env, "LBPCASCADE_FRONTALFACE_PATH")));
+        std::string data = encodeMat(detect_face_image);
+
+        apr_bucket *bucket = apr_bucket_pool_create(data.c_str(), data.length(), r->pool, r->connection->bucket_alloc);
+        apr_bucket_brigade *bucket_brigate = apr_brigade_create(r->pool, r->connection->bucket_alloc);
+        APR_BRIGADE_INSERT_TAIL(bucket_brigate, bucket);
+        ap_set_content_type(r, "image/jpg");
+        ap_set_content_length(r, data.length());
+        ap_pass_brigade(r->output_filters, bucket_brigate);
+
     } catch (bad_request& e) {
         ap_log_rerror(APLOG_MARK, APLOG_ERR, APLOG_MODULE_INDEX, r, e.what());
         return HTTP_BAD_REQUEST;

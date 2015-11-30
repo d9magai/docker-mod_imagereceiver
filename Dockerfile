@@ -5,7 +5,6 @@ RUN yum update -y && yum install -y epel-release && yum clean all
 RUN yum update -y && yum install -y \
     httpd-devel \
     libapreq2-devel \
-    json-c-devel \
     && yum clean all
 
 COPY mod_imagereceiver.conf  /etc/httpd/conf.d/mod_imagereceiver.conf

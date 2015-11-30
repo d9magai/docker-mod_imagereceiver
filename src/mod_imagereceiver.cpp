@@ -43,7 +43,7 @@ apreq_param_t *get_validated_post_param(request_rec *r, const char *name) {
     return param;
 }
 
-cv::Mat convert_to_mat(request_rec *r, apr_bucket_brigade *upload) {
+cv::Mat bb2Mat(request_rec *r, apr_bucket_brigade *upload) {
 
     apr_bucket_brigade *bb = apr_brigade_create(r->pool, r->connection->bucket_alloc);
     apreq_brigade_copy(bb, upload);
@@ -98,7 +98,7 @@ static int imagereceiver_handler(request_rec *r) {
 
     try {
         apreq_param_t *param = get_validated_post_param(r, "image");
-        cv::Mat image = convert_to_mat(r, param->upload);
+        cv::Mat image = bb2Mat(r, param->upload);
         cv::Mat detect_face_image = detect_face(image, std::string(apr_table_get(r->subprocess_env, "LBPCASCADE_FRONTALFACE_PATH")));
         std::string data = encode_mat_to_string(detect_face_image);
 

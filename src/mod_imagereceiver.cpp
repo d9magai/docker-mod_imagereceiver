@@ -82,7 +82,7 @@ cv::Mat detect_face(cv::Mat image, const std::string cascade_filename) {
     return ret;
 }
 
-std::string encode_mat_to_string(cv::Mat image) {
+std::string encodeMat(cv::Mat image) {
 
     std::vector<int> p { CV_IMWRITE_JPEG_QUALITY, 100 };
     std::vector<unsigned char> buf;
@@ -100,7 +100,7 @@ static int imagereceiver_handler(request_rec *r) {
         apreq_param_t *param = get_validated_post_param(r, "image");
         cv::Mat image = bb2Mat(r, param->upload);
         cv::Mat detect_face_image = detect_face(image, std::string(apr_table_get(r->subprocess_env, "LBPCASCADE_FRONTALFACE_PATH")));
-        std::string data = encode_mat_to_string(detect_face_image);
+        std::string data = encodeMat(detect_face_image);
 
         apr_bucket *bkt = apr_bucket_pool_create(data.c_str(), data.length(), r->pool, r->connection->bucket_alloc);
         apr_bucket_brigade *bucket_brigate = apr_brigade_create(r->pool, r->connection->bucket_alloc);

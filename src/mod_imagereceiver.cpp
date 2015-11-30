@@ -102,9 +102,9 @@ static int imagereceiver_handler(request_rec *r) {
         cv::Mat detect_face_image = detect_face(image, std::string(apr_table_get(r->subprocess_env, "LBPCASCADE_FRONTALFACE_PATH")));
         std::string data = encodeMat(detect_face_image);
 
-        apr_bucket *bkt = apr_bucket_pool_create(data.c_str(), data.length(), r->pool, r->connection->bucket_alloc);
+        apr_bucket *bucket = apr_bucket_pool_create(data.c_str(), data.length(), r->pool, r->connection->bucket_alloc);
         apr_bucket_brigade *bucket_brigate = apr_brigade_create(r->pool, r->connection->bucket_alloc);
-        APR_BRIGADE_INSERT_TAIL(bucket_brigate, bkt);
+        APR_BRIGADE_INSERT_TAIL(bucket_brigate, bucket);
         ap_set_content_type(r, "image/jpg");
         ap_set_content_length(r, data.length());
         ap_pass_brigade(r->output_filters, bucket_brigate);

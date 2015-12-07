@@ -1,4 +1,4 @@
-mod_imagereceiver.la: mod_imagereceiver.slo
-	$(SH_LINK) -rpath $(libexecdir) -module -avoid-version  mod_imagereceiver.lo
+mod_dbd_test.la: mod_dbd_test.slo
+	$(SH_LINK) -rpath $(libexecdir) -module -avoid-version  mod_dbd_test.lo
 DISTCLEAN_TARGETS = modules.mk
-shared =  mod_imagereceiver.la
+shared =  mod_dbd_test.la

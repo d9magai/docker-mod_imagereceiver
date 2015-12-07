@@ -3,10 +3,6 @@ MAINTAINER d9magai
 
 RUN yum update -y && yum install -y epel-release && yum clean all
 RUN yum update -y && yum install -y \
-    httpd-devel \
-    apr-util-mysql \
-    && yum clean all
-RUN yum update -y && yum install -y \
     gcc-c++ \
     make \
     httpd-devel \

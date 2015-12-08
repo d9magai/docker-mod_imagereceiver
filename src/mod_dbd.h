@@ -28,9 +28,6 @@
  * @{
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #ifndef DBD_H
 #define DBD_H
@@ -98,7 +95,13 @@ DBD_DECLARE_NONSTD(void) ap_dbd_close(server_rec*, ap_dbd_t*);
  * and MUST NOT be explicitly closed.  Return NULL on error.
  * This is the preferred function for most applications.
  */
+#ifdef __cplusplus
+extern "C" {
+#endif
 DBD_DECLARE_NONSTD(ap_dbd_t*) ap_dbd_acquire(request_rec*);
+#ifdef __cplusplus
+}
+#endif
 
 /* acquire a connection that will have the lifetime of a connection
  * and MUST NOT be explicitly closed.  Return NULL on error.
@@ -125,7 +128,4 @@ APR_DECLARE_EXTERNAL_HOOK(dbd, DBD, apr_status_t, post_connect,
 #endif
 /** @} */
 
-#ifdef __cplusplus
-}
-#endif
 

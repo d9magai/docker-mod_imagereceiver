@@ -7,6 +7,8 @@
 #include "apr_dbd.h"
 #include "mod_dbd.h"
 
+extern "C" module AP_MODULE_DECLARE_DATA dbd_test_module;
+
 /* The sample content handler */
 static int dbd_test_handler(request_rec *r)
 {

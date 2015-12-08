@@ -12,7 +12,7 @@ RUN yum update -y && yum install -y \
 COPY mod_dbd_test.conf  /etc/httpd/conf.d/mod_dbd_test.conf
 COPY src /opt/dbd_test_build
 WORKDIR /opt/dbd_test_build
-RUN make && apxs -A -i -a -c mod_dbd_test.c && make clean
+RUN make && apxs -A -i -a -n 'dbd_test' mod_dbd_test.so && make clean
 
 EXPOSE 80
 CMD ["/usr/sbin/httpd", "-D", "FOREGROUND"] 

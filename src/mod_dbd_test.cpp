@@ -18,9 +18,18 @@ static int dbd_test_handler(request_rec *r)
     r->content_type = "text/html";      
 
     ap_dbd_t *dbd = ap_dbd_acquire(r);
-    const char *statement = "INSERT users(id, name) VALUES(1, 'hoge');";
-    int nrows;
-    apr_dbd_query(dbd->driver, dbd->handle, &nrows, statement);
+    const char *sql = "SELECT * FROM users;";
+    apr_dbd_results_t *res = NULL;
+    apr_status_t rv = apr_dbd_select(dbd->driver, r->pool, dbd->handle, &res, sql, 0);
+    if (rv) {
+        ap_rputs(std::to_string(rv).c_str(), r);
+    }
+
+    apr_dbd_row_t *row;
+    while (apr_dbd_get_row(dbd->driver, r->pool, res, &row, 0) != -1) {
+        ap_rputs(apr_dbd_get_entry(dbd->driver, row, 0), r);
+        ap_rputs(apr_dbd_get_entry(dbd->driver, row, 1), r);
+    }
 
     if (!r->header_only) {
         ap_rputs("The sample page from mod_dbd_test.c\n", r);

@@ -22,8 +22,9 @@ static int dbd_test_handler(request_rec *r)
     int nrows;
     apr_dbd_query(dbd->driver, dbd->handle, &nrows, statement);
 
-    if (!r->header_only)
+    if (!r->header_only) {
         ap_rputs("The sample page from mod_dbd_test.c\n", r);
+    }
     return OK;
 }
 

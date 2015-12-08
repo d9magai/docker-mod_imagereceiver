@@ -6,6 +6,7 @@
 #include "apr_strings.h"
 #include "apr_dbd.h"
 #include "mod_dbd.h"
+#include <string>
 
 extern "C" module AP_MODULE_DECLARE_DATA dbd_test_module;
 

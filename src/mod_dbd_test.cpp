@@ -26,10 +26,12 @@ static int dbd_test_handler(request_rec *r)
         ap_rputs(std::to_string(rv).c_str(), r);
     }
 
-    apr_dbd_row_t *row;
-    while (apr_dbd_get_row(dbd->driver, r->pool, res, &row, 0) != -1) {
-        ap_rputs(apr_dbd_get_entry(dbd->driver, row, 0), r);
-        ap_rputs(apr_dbd_get_entry(dbd->driver, row, 1), r);
+    int ncols = apr_dbd_num_cols(dbd->driver, res);
+    apr_dbd_row_t *row = NULL;
+    while (!apr_dbd_get_row(dbd->driver, r->pool, res, &row, -1)) {
+        for (int i = 0; i < ncols; i++) {
+            ap_rputs(apr_dbd_get_entry(dbd->driver, row, i), r);
+        }
     }
 
     if (!r->header_only) {

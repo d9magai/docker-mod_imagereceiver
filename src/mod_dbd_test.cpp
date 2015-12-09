@@ -48,11 +48,11 @@ static void dbd_test_register_hooks(apr_pool_t *p)
 /* Dispatch list for API hooks */
 module AP_MODULE_DECLARE_DATA dbd_test_module = {
     STANDARD20_MODULE_STUFF, 
-    NULL,                  /* create per-dir    config structures */
-    NULL,                  /* merge  per-dir    config structures */
-    NULL,                  /* create per-server config structures */
-    NULL,                  /* merge  per-server config structures */
-    NULL,                  /* table of config file commands       */
+    NULL,                    /* create per-dir    config structures */
+    NULL,                    /* merge  per-dir    config structures */
+    NULL,                    /* create per-server config structures */
+    NULL,                    /* merge  per-server config structures */
+    NULL,                    /* table of config file commands       */
     dbd_test_register_hooks  /* register hooks                      */
 };
 

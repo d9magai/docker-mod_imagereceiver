@@ -69,7 +69,7 @@ cv::Mat bb2Mat(request_rec *r, apr_bucket_brigade *upload) {
 cv::Mat detect_face(cv::Mat image, const std::string cascade_filename) {
 
     cv::Mat gray;
-    cv::cvtColor(image, gray, CV_BGRA2GRAY);
+    cv::cvtColor(image, gray, cv::COLOR_BGRA2GRAY);
     cv::CascadeClassifier cascade;
     cascade.load(cascade_filename);
     std::vector<cv::Rect> faces;

@@ -7,10 +7,40 @@
 #include <apr_strings.h>
 #include <apreq2/apreq_util.h>
 #include <apreq2/apreq_module_apache2.h>
+#include <aws/core/auth/AWSCredentialsProvider.h>
+#include <aws/core/utils/StringUtils.h>
+#include <aws/s3/S3Client.h>
+#include <aws/s3/model/GetObjectRequest.h>
 
 extern "C" module AP_MODULE_DECLARE_DATA imagereceiver_module;
 
 APLOG_USE_MODULE (imagereceiver);
+
+/* モジュール設定情報(追加) */
+struct mytest_config {
+    const char  *message;
+    cv::Mat mat;
+    Aws::S3::S3Client s3Client
+} mytest_config;
+
+/* 設定情報の生成・初期化(追加) */
+static void * create_per_dir_config (apr_pool_t *pool, char *arg)
+{
+    void * buf = apr_pcalloc(pool, sizeof(mytest_config));
+    struct mytest_config *cfg = (struct mytest_config*)buf;
+    // default value
+    cfg->message    = "The sample page by mod_mytest.c";
+    cfg->mat = cv::Mat::ones(100, 100, CV_8U) * 100;
+
+    Aws::Client::ClientConfiguration config;
+    config.scheme = Aws::Http::Scheme::HTTPS;
+    config.connectTimeoutMs = 30000;
+    config.requestTimeoutMs = 30000;
+    config.region = Aws::Region::AP_NORTHEAST_1;
+    cfg->s3Client(Aws::Auth::AWSCredentials(Aws::String(apr_table_get(r->subprocess_env, "AWS_ACCESS_KEY_ID")), Aws::String(apr_table_get(r->subprocess_env, "AWS_SECRET_ACCESS_KEY"))), config);
+
+    return buf;
+}
 
 class bad_request: public std::runtime_error {
 public:
@@ -97,10 +127,8 @@ static int imagereceiver_handler(request_rec *r) {
     }
 
     try {
-        apreq_param_t *param = get_validated_post_param(r, "image");
-        cv::Mat image = bb2Mat(r, param->upload);
-        cv::Mat detect_face_image = detect_face(image, std::string(apr_table_get(r->subprocess_env, "LBPCASCADE_FRONTALFACE_PATH")));
-        std::string data = encodeMat(detect_face_image);
+        struct mytest_config *cfg = (struct mytest_config*)ap_get_module_config(r->per_dir_config, &imagereceiver_module);
+        std::string data = encodeMat(cfg->mat);
 
         apr_bucket *bucket = apr_bucket_pool_create(data.c_str(), data.length(), r->pool, r->connection->bucket_alloc);
         apr_bucket_brigade *bucket_brigate = apr_brigade_create(r->pool, r->connection->bucket_alloc);
@@ -127,11 +155,13 @@ static void imagereceiver_register_hooks(apr_pool_t *p) {
     ap_hook_handler(imagereceiver_handler, NULL, NULL, APR_HOOK_MIDDLE);
 }
 
-module AP_MODULE_DECLARE_DATA imagereceiver_module = { STANDARD20_MODULE_STUFF, NULL, /* create per-dir config structures */
-NULL, /* merge  per-dir    config structures */
-NULL, /* create per-server config structures */
-NULL, /* merge  per-server config structures */
-NULL, /* table of config file commands */
-imagereceiver_register_hooks /* register hooks */
+module AP_MODULE_DECLARE_DATA imagereceiver_module = {
+    STANDARD20_MODULE_STUFF,
+    create_per_dir_config,       /* create per-dir config structures */
+    NULL,                        /* merge  per-dir    config structures */
+    NULL,                        /* create per-server config structures */
+    NULL,                        /* merge  per-server config structures */
+    NULL,                        /* table of config file commands */
+    imagereceiver_register_hooks /* register hooks */
 };
 

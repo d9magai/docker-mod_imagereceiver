@@ -141,7 +141,7 @@ static int imagereceiver_handler(request_rec *r) {
     }
 
     try {
-        struct mytest_config *cfg = (struct mytest_config*)ap_get_module_config(r->per_dir_config, &imagereceiver_module);
+        struct mytest_config *cfg = static_cast<struct mytest_config*>ap_get_module_config(r->per_dir_config, &imagereceiver_module);
        
         Aws::S3::Model::GetObjectRequest getObjectRequest;
         getObjectRequest.SetBucket("mybucket");

@@ -1,3 +1,9 @@
+#include <aws/core/auth/AWSCredentialsProvider.h>
+#include <aws/core/auth/AWSCredentialsProviderChain.h>
+#include <aws/core/utils/StringUtils.h>
+#include <aws/s3/S3Client.h>
+#include <aws/s3/model/GetObjectRequest.h>
+#include <cstdlib>
 #include <vector>
 #include <exception>
 #include <opencv2/opencv.hpp>
@@ -7,25 +13,33 @@
 #include <apr_strings.h>
 #include <apreq2/apreq_util.h>
 #include <apreq2/apreq_module_apache2.h>
-#include <aws/core/auth/AWSCredentialsProvider.h>
-#include <aws/core/utils/StringUtils.h>
-#include <aws/s3/S3Client.h>
-#include <aws/s3/model/GetObjectRequest.h>
 
 extern "C" module AP_MODULE_DECLARE_DATA imagereceiver_module;
 
 APLOG_USE_MODULE (imagereceiver);
 
+using namespace Aws::Auth;
+using namespace Aws::Http;
+using namespace Aws::Client;
+using namespace Aws::S3;
+using namespace Aws::S3::Model;
+using namespace Aws::Utils;
+
 /* モジュール設定情報(追加) */
 struct mytest_config {
     const char  *message;
     cv::Mat mat;
-    Aws::S3::S3Client s3Client
+    std::shared_ptr<Aws::S3::S3Client> s3Client;
 } mytest_config;
 
 /* 設定情報の生成・初期化(追加) */
 static void * create_per_dir_config (apr_pool_t *pool, char *arg)
 {
+
+    const char* ALLOCATION_TAG = "ALLOCATION_TAG";
+    putenv("AWS_ACCESS_KEY_ID=XXXXXXXXXXXXXXXXXXXXX");
+    putenv("AWS_SECRET_KEY_ID=XXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+
     void * buf = apr_pcalloc(pool, sizeof(mytest_config));
     struct mytest_config *cfg = (struct mytest_config*)buf;
     // default value
@@ -37,7 +51,7 @@ static void * create_per_dir_config (apr_pool_t *pool, char *arg)
     config.connectTimeoutMs = 30000;
     config.requestTimeoutMs = 30000;
     config.region = Aws::Region::AP_NORTHEAST_1;
-    cfg->s3Client(Aws::Auth::AWSCredentials(Aws::String(apr_table_get(r->subprocess_env, "AWS_ACCESS_KEY_ID")), Aws::String(apr_table_get(r->subprocess_env, "AWS_SECRET_ACCESS_KEY"))), config);
+    cfg->s3Client = Aws::MakeShared<S3Client>(ALLOCATION_TAG, Aws::MakeShared<DefaultAWSCredentialsProviderChain>(ALLOCATION_TAG), config);
 
     return buf;
 }
@@ -128,8 +142,23 @@ static int imagereceiver_handler(request_rec *r) {
 
     try {
         struct mytest_config *cfg = (struct mytest_config*)ap_get_module_config(r->per_dir_config, &imagereceiver_module);
-        std::string data = encodeMat(cfg->mat);
-
+       
+        Aws::S3::Model::GetObjectRequest getObjectRequest;
+        getObjectRequest.SetBucket("mybucket");
+        getObjectRequest.SetKey("path/to/img.JPG");
+        auto getObjectOutcome = cfg->s3Client->GetObject(getObjectRequest);
+        if (!getObjectOutcome.IsSuccess()) {
+            std::cerr << "File download failed from s3 with error " << getObjectOutcome.GetError().GetMessage() << std::endl;
+            exit(1);
+        }
+        std::stringstream ss;
+        ss << getObjectOutcome.GetResult().GetBody().rdbuf();
+        std::string str = ss.str();
+        std::vector<char> vec(str.begin(), str.end());
+        cv::Mat img = cv::imdecode(cv::Mat(vec), CV_LOAD_IMAGE_COLOR);
+        std::string data = encodeMat(img);
+        //std::string data = encodeMat(cfg->mat);
+       
         apr_bucket *bucket = apr_bucket_pool_create(data.c_str(), data.length(), r->pool, r->connection->bucket_alloc);
         apr_bucket_brigade *bucket_brigate = apr_brigade_create(r->pool, r->connection->bucket_alloc);
         APR_BRIGADE_INSERT_TAIL(bucket_brigate, bucket);

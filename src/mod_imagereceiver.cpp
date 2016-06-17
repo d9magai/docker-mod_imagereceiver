@@ -1,3 +1,7 @@
+#include <aws/core/auth/AWSCredentialsProvider.h>
+#include <aws/core/utils/StringUtils.h>
+#include <aws/s3/S3Client.h>
+#include <aws/s3/model/GetObjectRequest.h>
 #include <vector>
 #include <string>
 #include <stdexcept>
@@ -7,6 +11,7 @@
 #include <http_protocol.h>
 #include <http_log.h>
 #include <apr_strings.h>
+
 #include "mod_imagereceiver.h"
 
 extern "C" module AP_MODULE_DECLARE_DATA imagereceiver_module;
@@ -18,6 +23,11 @@ static void *create_per_server_config(apr_pool_t *pool, server_rec *s)
 {
     struct Credential *cfg = (struct Credential*)(apr_pcalloc(pool, sizeof(struct Credential)));
     return cfg;
+}
+
+void log_err(request_rec *r, const char *error_message) {
+
+    ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, r, "%s: query string is %s", error_message, r->args);
 }
 
 class bad_request: public std::runtime_error {
@@ -40,7 +50,60 @@ static int imagereceiver_handler(request_rec *r) {
         return DECLINED;
     }
 
+    std::stringstream iss;
+    iss << r->args;
+    std::string tmp;
+    std::vector<std::string> res;
+    std::map<std::string, std::string> map;
+    while(getline(iss, tmp,'&')) {
+        std::stringstream i(tmp);
+        std::string t;
+        std::vector<std::string> v;
+        while(getline(i, t,'=')) {
+            v.push_back(t);
+        }
+        map.insert(std::make_pair(v[0], v[1]));
+    }
+
     try {
+        struct Credential *crd = (struct Credential*)(ap_get_module_config(r->server->module_config, &imagereceiver_module));
+        Aws::Client::ClientConfiguration config;
+        config.scheme = Aws::Http::Scheme::HTTPS;
+        config.connectTimeoutMs = 30000;
+        config.requestTimeoutMs = 30000;
+        config.region = Aws::Region::AP_NORTHEAST_1;
+
+        Aws::StringStream ass;
+        ass << crd->accesskeyid;
+        Aws::String accesskeyid = ass.str();
+        ass.str("");
+        ass << crd->secretaccesskey;
+        Aws::String secretaccesskey = ass.str();
+        ass.str("");
+        Aws::S3::S3Client s3Client(Aws::Auth::AWSCredentials(accesskeyid, secretaccesskey), config);
+
+        Aws::S3::Model::GetObjectRequest getObjectRequest;
+        ass << map["bucket"];
+        getObjectRequest.SetBucket(ass.str());
+        ass.str("");
+        ass << map["key"];
+        getObjectRequest.SetKey(ass.str());
+        ass.str("");
+
+        auto getObjectOutcome = s3Client.GetObject(getObjectRequest);
+        if (!getObjectOutcome.IsSuccess()) {
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+        std::stringstream ss;
+        ss << getObjectOutcome.GetResult().GetBody().rdbuf();
+        std::string data = ss.str();
+
+        apr_bucket *b = apr_bucket_pool_create(data.c_str(), data.length(), r->pool, r->connection->bucket_alloc);
+        apr_bucket_brigade *bucket_brigate = apr_brigade_create(r->pool, r->connection->bucket_alloc);
+        APR_BRIGADE_INSERT_TAIL(bucket_brigate, b);
+        ap_set_content_type(r, "image/jpg");
+        ap_set_content_length(r, data.length());
+        ap_pass_brigade(r->output_filters, bucket_brigate);
 
     } catch (bad_request& e) {
         ap_log_rerror(APLOG_MARK, APLOG_ERR, APLOG_MODULE_INDEX, r, e.what());
@@ -83,17 +146,6 @@ static const char *set_secretaccesskey(cmd_parms *parms, void *in_struct_ptr, co
     return NULL;
 }
 
-static const char *set_sha256secretkey(cmd_parms *parms, void *in_struct_ptr, const char *arg)
-{
-    if (strlen(arg) == 0) {
-        return "SHA256_SECRET_KEY argument must be a string";
-    }
-
-    struct Credential *cfg = (struct Credential*)(ap_get_module_config(parms->server->module_config, &imagereceiver_module));
-    cfg->sha256secretkey = arg;
-    return NULL;
-}
-
 /* 設定情報フック定義(追加) */
 static const command_rec auth_s3req_cmds[] =
     {
@@ -102,9 +154,6 @@ static const command_rec auth_s3req_cmds[] =
         },
         {
         "AWS_SECRET_ACCESS_KEY", set_secretaccesskey, 0, RSRC_CONF, TAKE1, "aws secret access key."
-        },
-        {
-        "SHA256_SECRET_KEY", set_sha256secretkey, 0, RSRC_CONF, TAKE1, "sha256 secret key."
         },
         {
         0

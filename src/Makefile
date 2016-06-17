@@ -24,17 +24,13 @@ all: mod_imagereceiver.so
 # ld so we end up with the right c++ stuff. We do this in two steps,
 # compile and link.
 
-# get OpenCV's cflags, libs
-OPENCV_CFLAGS=`pkg-config --cflags opencv`
-OPENCV_LIBS=`pkg-config --libs opencv`
-
 # compile
 mod_imagereceiver.o: mod_imagereceiver.cpp
-	g++ -c -fPIC -std=c++11 -I$(APXS_INCLUDEDIR) -I/usr/include/apr-1/ -I/usr/include/apreq2/ $(OPENCV_CFLAGS) $(APXS_CFLAGS) $(APXS_CFLAGS_SHLIB) -Wall -o $@ $< 
+	g++ -c -fPIC -std=c++11 -I$(APXS_INCLUDEDIR) -I/usr/include/apr-1/ -I/usr/include/apreq2/ -I/opt/aws-sdk-cpp/include $(APXS_CFLAGS) $(APXS_CFLAGS_SHLIB) -Wall -o $@ $< 
 
 # link
 mod_imagereceiver.so: mod_imagereceiver.o 
-	g++ -fPIC -shared -o $@ $< $(APXS_LIBS_SHLIB) -lapreq2 $(OPENCV_LIBS)
+	g++ -fPIC -shared -o $@ $< $(APXS_LIBS_SHLIB) -lapreq2 -L/opt/aws-sdk-cpp/lib/linux/intel64/ -laws-cpp-sdk-core -laws-cpp-sdk-s3
 # install the shared object file into Apache 
 install: all
 	$(APXS) -i -a -n 'imagereceiver' mod_imagereceiver.so

@@ -1,4 +1,4 @@
-FROM d9magai/opencv
+FROM d9magai/awssdkcpp
 MAINTAINER d9magai
 
 RUN yum update -y && yum install -y epel-release && yum clean all

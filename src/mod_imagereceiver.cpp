@@ -50,20 +50,13 @@ static int imagereceiver_handler(request_rec *r) {
         return DECLINED;
     }
 
-    std::stringstream iss;
-    iss << r->args;
-    std::string tmp;
-    std::vector<std::string> res;
-    std::map<std::string, std::string> map;
-    while(getline(iss, tmp,'&')) {
-        std::stringstream i(tmp);
-        std::string t;
-        std::vector<std::string> v;
-        while(getline(i, t,'=')) {
-            v.push_back(t);
-        }
-        map.insert(std::make_pair(v[0], v[1]));
-    }
+    std::stringstream ss;
+    ss << r->args;
+    std::string str = ss.str();
+    std::string::size_type index = str.find_first_of("/");
+
+    Aws::String bucket(str.begin(), str.begin() + index);
+    Aws::String key(str.begin() + index + 1, str.end());
 
     try {
         struct Credential *crd = (struct Credential*)(ap_get_module_config(r->server->module_config, &imagereceiver_module));
@@ -83,12 +76,8 @@ static int imagereceiver_handler(request_rec *r) {
         Aws::S3::S3Client s3Client(Aws::Auth::AWSCredentials(accesskeyid, secretaccesskey), config);
 
         Aws::S3::Model::GetObjectRequest getObjectRequest;
-        ass << map["bucket"];
-        getObjectRequest.SetBucket(ass.str());
-        ass.str("");
-        ass << map["key"];
-        getObjectRequest.SetKey(ass.str());
-        ass.str("");
+        getObjectRequest.SetBucket(bucket);
+        getObjectRequest.SetKey(key);
 
         auto getObjectOutcome = s3Client.GetObject(getObjectRequest);
         if (!getObjectOutcome.IsSuccess()) {

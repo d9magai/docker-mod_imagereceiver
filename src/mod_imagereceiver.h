@@ -15,10 +15,8 @@
  */
 struct Credential
 {
-    const char *accesskeyid;
-    const char *secretaccesskey;
-    const char *token;
-    const char *sha256secretkey;
+    std::shared_ptr<Aws::String> accesskeyid;
+    std::shared_ptr<Aws::String> secretaccesskey;
 };
 
 

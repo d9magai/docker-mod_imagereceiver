@@ -66,14 +66,8 @@ static int imagereceiver_handler(request_rec *r) {
         config.requestTimeoutMs = 30000;
         config.region = Aws::Region::AP_NORTHEAST_1;
 
-        Aws::StringStream ass;
-        ass << crd->accesskeyid;
-        Aws::String accesskeyid = ass.str();
-        ass.str("");
-        ass << crd->secretaccesskey;
-        Aws::String secretaccesskey = ass.str();
-        ass.str("");
-        Aws::S3::S3Client s3Client(Aws::Auth::AWSCredentials(accesskeyid, secretaccesskey), config);
+
+        Aws::S3::S3Client s3Client(Aws::Auth::AWSCredentials(*(crd->accesskeyid), *(crd->secretaccesskey)), config);
 
         Aws::S3::Model::GetObjectRequest getObjectRequest;
         getObjectRequest.SetBucket(bucket);
@@ -120,7 +114,7 @@ static const char *set_accesskeyid(cmd_parms *parms, void *mconfig, const char *
     }
 
     struct Credential *cfg = (struct Credential*)(ap_get_module_config(parms->server->module_config, &imagereceiver_module));
-    cfg->accesskeyid = arg;
+    cfg->accesskeyid = Aws::MakeShared<Aws::String>("HOGE", arg);
     return NULL;
 }
 
@@ -131,7 +125,7 @@ static const char *set_secretaccesskey(cmd_parms *parms, void *in_struct_ptr, co
     }
 
     struct Credential *cfg = (struct Credential*)(ap_get_module_config(parms->server->module_config, &imagereceiver_module));
-    cfg->secretaccesskey = arg;
+    cfg->secretaccesskey = Aws::MakeShared<Aws::String>("HOGE", arg);
     return NULL;
 }
 

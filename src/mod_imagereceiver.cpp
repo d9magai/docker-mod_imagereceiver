@@ -70,8 +70,7 @@ static int imagereceiver_handler(request_rec *r) {
         Aws::S3::S3Client s3Client(Aws::Auth::AWSCredentials(*(crd->accesskeyid), *(crd->secretaccesskey)), config);
 
         Aws::S3::Model::GetObjectRequest getObjectRequest;
-        getObjectRequest.SetBucket(bucket);
-        getObjectRequest.SetKey(key);
+        getObjectRequest.WithBucket(bucket).WithKey(key);
 
         auto getObjectOutcome = s3Client.GetObject(getObjectRequest);
         if (!getObjectOutcome.IsSuccess()) {

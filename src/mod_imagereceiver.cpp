@@ -14,6 +14,8 @@
 
 #include "mod_imagereceiver.h"
 
+const char *ALLOCATION_TAG = "mod_imagereceiver_allocation_tag";
+
 extern "C" module AP_MODULE_DECLARE_DATA imagereceiver_module;
 
 APLOG_USE_MODULE (imagereceiver);
@@ -113,7 +115,7 @@ static const char *set_accesskeyid(cmd_parms *parms, void *mconfig, const char *
     }
 
     struct Credential *cfg = (struct Credential*)(ap_get_module_config(parms->server->module_config, &imagereceiver_module));
-    cfg->accesskeyid = Aws::MakeShared<Aws::String>("HOGE", arg);
+    cfg->accesskeyid = Aws::MakeShared<Aws::String>(ALLOCATION_TAG, arg);
     return NULL;
 }
 
@@ -124,7 +126,7 @@ static const char *set_secretaccesskey(cmd_parms *parms, void *in_struct_ptr, co
     }
 
     struct Credential *cfg = (struct Credential*)(ap_get_module_config(parms->server->module_config, &imagereceiver_module));
-    cfg->secretaccesskey = Aws::MakeShared<Aws::String>("HOGE", arg);
+    cfg->secretaccesskey = Aws::MakeShared<Aws::String>(ALLOCATION_TAG, arg);
     return NULL;
 }
 

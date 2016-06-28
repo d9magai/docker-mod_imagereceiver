@@ -114,7 +114,7 @@ module AP_MODULE_DECLARE_DATA helloworld_module = {
     NULL,                  /* merge  per-dir    config structures */
     create_helloworld_server_config,                  /* create per-server config structures */
     NULL,                  /* merge  per-server config structures */
-    NULL,                  /* table of config file commands       */
+    helloworld_cmds,                  /* table of config file commands       */
     helloworld_register_hooks  /* register hooks                      */
 };
 
